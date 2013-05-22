@@ -1,2 +1,2 @@
-form2postgres
+formhub_rest2postgres
 =============
