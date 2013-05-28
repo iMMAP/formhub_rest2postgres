@@ -12,10 +12,9 @@ $app->get('/', function () {
 $app->post('/formhub-json', function () use ($app) {
           $request = $app->request();
           $body = $request->getBody();
-          $json = json_decode($body);
 		  $pg_class = new PostgresSQL();
 	      $pg_class->db_connect();
-          $pg_class->save($json);
+          $pg_class->save($body);
 		  $pg_class->db_close();  
         });
 		
