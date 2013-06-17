@@ -1,16 +1,21 @@
-<?php namespace Immap\Database;
+<?php
+
+namespace Immap\Database;
 
 class PostgresSQL {
+
   public $db_conn;
   public $conn_string;
-  public $reserved_word = array("gps", 
-							    "meta/instanceID", 
-								"uuid", "_attachments", 
-								"formhub/uuid", 
-								"meta/deprecatedID"
-							    );
+  public $reserved_word = array("gps",
+      "meta/instanceID",
+      "uuid", 
+	  "_attachments",
+      "formhub/uuid",
+      "meta/deprecatedID"
+  );
 
   public function __construct() {
+    
   }
 
   function create_table_if_not_exits($table_name = null, $fileds = null) {
@@ -31,7 +36,7 @@ EOD;
   }
 
   function insert_into_table($table_name, $colums_str, $value_str, $params_arr) {
-    $pgsql = "INSERT INTO public.{$table_name} ($colums_str) VALUES($value_str);";
+    $pgsql = "INSERT INTO {$table_name} ($colums_str) VALUES($value_str);";
     $result = pg_query_params($this->db_conn, $pgsql, $params_arr);
   }
 
@@ -47,7 +52,7 @@ EOD;
       $param_i = 0;
       $param_arr = array();
       foreach ($data as $key => $value) {
-        $data_type = "character varying(255)";
+        $data_type = "text";
         $extra = "";
         if ($key === "_uuid") {
           $extra = "NOT NULL";
@@ -60,21 +65,14 @@ EOD;
         }
         if (!in_array($key, $this->reserved_word)) {
           if ($is_create_table === false) {
-            if (mb_strlen($tmp_schema_table) === 0) {
-              $tmp_schema_table .= "{$key} {$data_type} {$extra}";
-            }
-            else {
-              $tmp_schema_table .= ",{$key} {$data_type} {$extra}";
-            }
+            $comma = (mb_strlen($tmp_schema_table) === 0 ? "" : ",");
+            $escape_field = pg_escape_identifier($key);
+            $tmp_schema_table .= "{$comma}{$escape_field} {$data_type} {$extra}";
           }
-          if (mb_strlen($colums_str) === 0) {
-            $colums_str .= $key;
-            $value_str .= "$" . ++$param_i;
-          }
-          else {
-            $colums_str .= ",$key";
-            $value_str .= ",$" . ++$param_i;
-          }
+          $comma = (mb_strlen($colums_str) === 0 ? "" : ",");
+          $escape_field = pg_escape_identifier($key);
+          $colums_str .= "{$comma}{$escape_field}";
+          $value_str .= "{$comma}$" . ++$param_i;
 
           if ($key === "_geolocation") {
             $value = "$value[0],$value[1]";
@@ -87,6 +85,7 @@ EOD;
           break;
         }
       }
+      $table_name = pg_escape_identifier($table_name);
       if ($is_create_table === false) {
         $this->create_table_if_not_exits($table_name, $schema_table);
         $is_create_table = true;
@@ -135,5 +134,4 @@ EOD;
   }
 
 }
-
 ?>
